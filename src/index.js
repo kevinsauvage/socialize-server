@@ -19,7 +19,6 @@ app.use(bodyParser.json())
 app.use(
   cors({
     origin: (origin, callback) => {
-      console.log(origin)
       if (config.cors.indexOf(origin) !== -1) {
         callback(null, true)
       } else {
