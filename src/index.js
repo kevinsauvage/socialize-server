@@ -3,11 +3,14 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
-const userRoute = require('./routes/user')
-const config = require('./config/index')
+const userRoute = require('./routes/user.route')
+const config = require('./config/cors')
 
 // defining the Express app
 const app = express()
+
+// MongoDb
+const db = require('./models/index')
 
 // adding Helmet to enhance your API's security
 app.use(helmet())
@@ -30,6 +33,20 @@ app.use(
   }),
 )
 
+// Connect to mongo db
+db.mongoose
+  .connect(db.url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('Connected to the database!')
+  })
+  .catch((err) => {
+    console.log('Cannot connect to the database!', err)
+    process.exit()
+  })
+
 // parse requests of content-type - application/json
 app.use(express.json())
 
@@ -40,7 +57,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(morgan('combined'))
 
 // defining an endpoint for user
-app.get('/users', userRoute)
+app.use(userRoute)
 
 // defining default route
 app.use(async (req, res, next) => {
