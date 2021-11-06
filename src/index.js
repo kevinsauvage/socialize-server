@@ -4,6 +4,8 @@ const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const userRoute = require('./routes/user.route')
+const postRoute = require('./routes/post.route')
+const commentRoute = require('./routes/comment.route')
 const config = require('./config/cors')
 
 // defining the Express app
@@ -16,8 +18,7 @@ const db = require('./models/index')
 app.use(helmet())
 
 // using bodyParser to parse JSON bodies into JS objects
-app.use(bodyParser.json())
-
+app.use(bodyParser.json({ limit: '5000mb' }))
 // cors whitelist
 app.use(
   cors({
@@ -39,7 +40,7 @@ db.mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => {
+  .then((db) => {
     console.log('Connected to the database!')
   })
   .catch((err) => {
@@ -57,7 +58,9 @@ app.use(express.urlencoded({ extended: true }))
 app.use(morgan('combined'))
 
 // defining an endpoint for user
+app.use(postRoute)
 app.use(userRoute)
+app.use(commentRoute)
 
 // defining default route
 app.use(async (req, res, next) => {

@@ -6,8 +6,19 @@ module.exports = (mongoose) => {
       email: {
         type: String,
         unique: true,
+        require: true,
       },
-      password: String,
+      password: {
+        type: String,
+        require: true,
+      },
+      salt: String,
+      about: String,
+      city: String,
+      birthday: Date,
+      image: String,
+      backgroundImg: String,
+      bgProfilPosition: Number,
     },
     { timestamps: true },
   )
