@@ -27,9 +27,10 @@ exports.create = async (req, res) => {
     .then((data) => {
       res.send(data)
     })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || 'Some error occurred while creating the user.',
+    .catch((error) => {
+      res.status(error.status).send({
+        message: error.message || 'Some error occurred while updating user.',
+        name: error.name,
       })
     })
 }
@@ -38,6 +39,7 @@ exports.create = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email })
+    console.log(user)
 
     if (!user) {
       const error = new Error('User does not exists')
@@ -56,8 +58,9 @@ exports.login = async (req, res) => {
 
     res.json(user)
   } catch (error) {
-    res.status(500).send({
-      message: error.message || 'Some error occurred while creating the user.',
+    res.status(error.status).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
     })
   }
 }
@@ -75,19 +78,11 @@ module.exports.hashPassword = (password) => {
 }
 
 // CHECK PASSWORD
-module.exports.isPasswordCorrect = async (
-  savedHash,
-  savedSalt,
-  passwordAttempt,
-) => {
-  const newHash = await crypto
+module.exports.isPasswordCorrect = (savedHash, savedSalt, passwordAttempt) =>
+  savedHash ===
+  crypto
     .pbkdf2Sync(passwordAttempt, savedSalt, PASSWORD_ITERATIONS, 512, 'sha512')
     .toString('base64')
-
-  console.log('saved', '____________', savedHash)
-  console.log('new', '____________', newHash)
-  return savedHash === newHash
-}
 
 // Retrieve all Users from the database.
 exports.findAll = (req, res) => {
@@ -95,10 +90,10 @@ exports.findAll = (req, res) => {
     .then((data) => {
       res.send(data)
     })
-    .catch((err) => {
-      res.status(500).send({
-        message:
-          err.message || 'Some error occurred while retrieving tutorials.',
+    .catch((error) => {
+      res.status(error.status).send({
+        message: error.message || 'Some error occurred while updating user.',
+        name: error.name,
       })
     })
 }
@@ -109,8 +104,9 @@ exports.findOne = async (req, res) => {
     const user = await User.findOne({ id: req.params.id })
     res.json(user)
   } catch (error) {
-    res.status(500).send({
-      message: err.message || 'Some error occurred while retrieving user.',
+    res.status(error.status).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
     })
   }
 }
@@ -129,8 +125,55 @@ exports.update = async (req, res) => {
 
     res.send(oldDocument)
   } catch (error) {
-    res.status(500).send({
+    res.status(error.status).send({
       message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
+    })
+  }
+}
+
+// Update a User by the id in the request
+exports.updatePassword = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { newPassword, oldPassword } = req.body
+
+    if (!id) res.status(400).send({ message: 'Missing userId params' })
+
+    if (!newPassword || !oldPassword)
+      res.status(400).send({ message: 'Missing field' })
+
+    const user = await User.findOne({ id: id })
+
+    if (!user) {
+      const error = new Error('User does not exists')
+      error.status = 404
+      error.name = 'UserNotFound'
+      throw error
+    }
+
+    if (!this.isPasswordCorrect(user.password, user.salt, oldPassword)) {
+      const error = new Error('User current password is not correct')
+      error.status = 400
+      error.name = 'InvalidPassword'
+      error.ok = false
+      throw error
+    }
+
+    const { salt, hash } = this.hashPassword(newPassword)
+
+    const filter = { id: id }
+
+    const oldDocument = await User.updateOne(filter, {
+      salt: salt,
+      password: hash,
+    })
+
+    res.send(oldDocument)
+  } catch (error) {
+    res.status(error.status).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
     })
   }
 }

@@ -15,10 +15,12 @@ module.exports = (mongoose) => {
       salt: String,
       about: String,
       city: String,
-      birthday: Date,
+      country: String,
+      birthday: String,
       image: String,
       backgroundImg: String,
       bgProfilPosition: Number,
+      phone: String,
     },
     { timestamps: true },
   )

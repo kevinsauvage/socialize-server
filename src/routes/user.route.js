@@ -16,6 +16,9 @@ router.get('/users/:id', users.findOne)
 // Update a User with id
 router.put('/users/:id', users.update)
 
+//Update user password
+router.put('/users/:id/password', users.updatePassword)
+
 // Delete a User with id
 router.delete('/:id', users.delete)
 
