@@ -5,6 +5,7 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const userRoute = require('./routes/user.route')
 const postRoute = require('./routes/post.route')
+const searchRoute = require('./routes/search.route')
 const commentRoute = require('./routes/comment.route')
 const config = require('./config/cors')
 
@@ -61,6 +62,7 @@ app.use(morgan('combined'))
 app.use(postRoute)
 app.use(userRoute)
 app.use(commentRoute)
+app.use(searchRoute)
 
 // defining default route
 app.use(async (req, res, next) => {

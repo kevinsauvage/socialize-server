@@ -15,6 +15,7 @@ exports.create = async (req, res) => {
   const { salt, hash } = this.hashPassword(req.body.password)
 
   const user = new User({
+    username: req.body.username,
     firstName: req.body.firstName,
     lastName: req.body.lastName,
     email: req.body.email,
@@ -101,7 +102,7 @@ exports.findAll = (req, res) => {
 // Find a single User with an id
 exports.findOne = async (req, res) => {
   try {
-    const user = await User.findOne({ id: req.params.id })
+    const user = await User.findOne({ _id: req.params.id })
     res.json(user)
   } catch (error) {
     res.status(error.status).send({
@@ -114,18 +115,21 @@ exports.findOne = async (req, res) => {
 // Update a User by the id in the request
 exports.update = async (req, res) => {
   try {
-    const { id } = req.params
+    const id = req.params.id
+
     const objectUpdate = req.body
-    console.log(id, objectUpdate)
+
+    console.log(id, 'id to updateeeeeeeeeeeeeeeeeeeeeeee')
+
     if (!id) res.status(400).send({ message: 'Missing userId params' })
     if (!objectUpdate) res.status(400).send({ message: 'No fields to update' })
 
-    const filter = { id: id }
-    const oldDocument = await User.updateOne(filter, objectUpdate)
+    const doc = await User.updateOne({ _id: id }, objectUpdate)
 
-    res.send(oldDocument)
+    res.send(doc)
   } catch (error) {
-    res.status(error.status).send({
+    console.log(error)
+    res.send({
       message: error.message || 'Some error occurred while updating user.',
       name: error.name,
     })
@@ -143,13 +147,12 @@ exports.updatePassword = async (req, res) => {
     if (!newPassword || !oldPassword)
       res.status(400).send({ message: 'Missing field' })
 
-    const user = await User.findOne({ id: id })
+    const user = await User.findOne({ _id: id })
 
     if (!user) {
-      const error = new Error('User does not exists')
-      error.status = 404
-      error.name = 'UserNotFound'
-      throw error
+      res
+        .status(404)
+        .send({ message: 'User does not exists', name: 'UserNotFound' })
     }
 
     if (!this.isPasswordCorrect(user.password, user.salt, oldPassword)) {
@@ -176,6 +179,32 @@ exports.updatePassword = async (req, res) => {
       name: error.name,
     })
   }
+}
+
+exports.search = async (req, res) => {
+  try {
+    const { query } = req.query
+    console.log(query)
+    const response = await User.find({
+      username: {
+        $regex: new RegExp(query, 'i'),
+      },
+    })
+
+    res.json(response)
+  } catch (error) {
+    res.status(error.status).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
+    })
+  }
+}
+
+exports.searchByIds = async (req, res) => {
+  console.log(req.body)
+  const records = await User.find({ _id: { $in: req.body } })
+  console.log(records)
+  res.json(records)
 }
 
 // Delete a User with the specified id in the request
