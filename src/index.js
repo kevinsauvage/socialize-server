@@ -63,6 +63,7 @@ app.use(postRoute)
 app.use(userRoute)
 app.use(commentRoute)
 app.use(searchRoute)
+app.get('/', (req, res) => res.send('Working!!!'))
 
 // defining default route
 app.use(async (req, res, next) => {
