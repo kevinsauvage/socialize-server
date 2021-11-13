@@ -29,7 +29,7 @@ exports.create = async (req, res) => {
       res.send(data)
     })
     .catch((error) => {
-      res.status(error.status).send({
+      res.status(error.status || 400).send({
         message: error.message || 'Some error occurred while updating user.',
         name: error.name,
       })
@@ -40,7 +40,6 @@ exports.create = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email })
-    console.log(user)
 
     if (!user) {
       const error = new Error('User does not exists')
@@ -59,7 +58,7 @@ exports.login = async (req, res) => {
 
     res.json(user)
   } catch (error) {
-    res.status(error.status).send({
+    res.status(error.status || 400).send({
       message: error.message || 'Some error occurred while updating user.',
       name: error.name,
     })
@@ -74,7 +73,6 @@ module.exports.hashPassword = (password) => {
   const hash = crypto
     .pbkdf2Sync(password, salt, PASSWORD_ITERATIONS, 512, 'sha512')
     .toString('base64')
-  console.log('hash created', hash)
   return { salt, hash }
 }
 
@@ -119,8 +117,6 @@ exports.update = async (req, res) => {
 
     const objectUpdate = req.body
 
-    console.log(id, 'id to updateeeeeeeeeeeeeeeeeeeeeeee')
-
     if (!id) res.status(400).send({ message: 'Missing userId params' })
     if (!objectUpdate) res.status(400).send({ message: 'No fields to update' })
 
@@ -128,7 +124,6 @@ exports.update = async (req, res) => {
 
     res.send(doc)
   } catch (error) {
-    console.log(error)
     res.send({
       message: error.message || 'Some error occurred while updating user.',
       name: error.name,
@@ -184,7 +179,6 @@ exports.updatePassword = async (req, res) => {
 exports.search = async (req, res) => {
   try {
     const { query } = req.query
-    console.log(query)
     const response = await User.find({
       username: {
         $regex: new RegExp(query, 'i'),
@@ -193,7 +187,7 @@ exports.search = async (req, res) => {
 
     res.json(response)
   } catch (error) {
-    res.status(error.status).send({
+    res.status(error.status || 400).send({
       message: error.message || 'Some error occurred while updating user.',
       name: error.name,
     })
@@ -201,17 +195,180 @@ exports.search = async (req, res) => {
 }
 
 exports.searchByIds = async (req, res) => {
-  console.log(req.body)
-  const records = await User.find({ _id: { $in: req.body } })
-  console.log(records)
-  res.json(records)
+  try {
+    const records = await User.find({ _id: { $in: req.body } })
+    res.json(records)
+  } catch (error) {
+    res.status(error.status || 400).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
+    })
+  }
 }
 
+exports.unfriend = async (req, res) => {
+  try {
+    if (!req.params.friendId) {
+      res.status(400).send({ message: 'Friend id not  provided' })
+    }
+
+    if (!req.params.userId) {
+      res.status(400).send({ message: 'User id not  provided' })
+    }
+    const user = await User.findById(req.params.userId)
+    const friend = await User.findById(req.params.friendId)
+
+    if (!user || !friend) {
+      res
+        .status(400)
+        .send({ message: 'User or friend not find with id provided' })
+    }
+
+    const newUserFriends = user.friends.filter((id) => !friend._id)
+    const newFriendFriends = friend.friends.filter((id) => !user._id)
+
+    const doc = await User.updateOne(
+      { _id: user._id },
+      { friends: newUserFriends },
+    )
+    const doc2 = await User.updateOne(
+      { _id: friend._id },
+      { friends: newFriendFriends },
+    )
+
+    res.json({ doc_1: doc, doc_2: doc2 })
+  } catch (error) {
+    res.status(error.status || 400).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
+    })
+  }
+}
+
+exports.sendAddfriends = async (req, res) => {
+  try {
+    if (!req.params.friendId) {
+      res.status(400).send({ message: 'Friend id not  provided' })
+    }
+    if (!req.params.userId) {
+      res.status(400).send({ message: 'User id not  provided' })
+    }
+
+    const friend = await User.findById(req.params.friendId)
+
+    if (!friend) {
+      res.status(400).send({ message: 'User not find with id provided' })
+    }
+
+    const objetToUpdate = {
+      friendsRequests: [...friend.friendsRequests, req.params.userId],
+    }
+
+    const doc = await User.updateOne({ _id: friend._id }, objetToUpdate)
+
+    res.json(doc)
+  } catch (error) {
+    res.status(error.status || 400).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
+    })
+  }
+}
+
+exports.unsendAddfriends = async (req, res) => {
+  try {
+    if (!req.params.friendId) {
+      res.status(400).send({ message: 'Friend id not  provided' })
+    }
+
+    if (!req.params.userId) {
+      res.status(400).send({ message: 'User id not  provided' })
+    }
+
+    const friend = await User.findById(req.params.friendId)
+
+    if (!friend) {
+      res.status(400).send({ message: 'User not find with id provided' })
+    }
+
+    const newFriendsRequests = friend.friendsRequests.filter(
+      (id) => id !== req.params.userId,
+    )
+
+    const objetToUpdate = {
+      friendsRequests: newFriendsRequests,
+    }
+
+    const doc = await User.updateOne({ _id: friend._id }, objetToUpdate)
+    res.json(doc)
+  } catch (error) {
+    res.status(error.status || 400).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
+    })
+  }
+}
+
+exports.acceptFriend = async (req, res) => {
+  try {
+    if (!req.params.friendId) {
+      return res.status(400).send({ message: 'Friend id not provided' })
+    }
+
+    if (!req.params.userId) {
+      return res.status(400).send({ message: 'User id not provided' })
+    }
+    const user = await User.findById(req.params.userId)
+    const friend = await User.findById(req.params.friendId)
+
+    if (!user || !friend) {
+      return res
+        .status(400)
+        .send({ message: 'User or friend not find with id provided' })
+    }
+
+    const newUserFriends = [...user.friends, friend._id]
+
+    const newUserFriendsRequests = await user.friendsRequests.filter(
+      (id) => !friend._id,
+    )
+
+    const objectToUpdate = {
+      friends: newUserFriends,
+      friendsRequests: newUserFriendsRequests,
+    }
+
+    const newFriendFriends = [...friend.friends, user._id]
+
+    const doc = await User.updateOne({ _id: user._id }, objectToUpdate)
+
+    const doc2 = await User.updateOne(
+      { _id: friend._id },
+      { friends: newFriendFriends },
+    )
+
+    if (doc.acknowledged !== true) {
+      return res
+        .status(400)
+        .send({ message: 'We was not able to unfriend you' })
+    }
+
+    if (doc2.acknowledged !== true) {
+      return res
+        .status(400)
+        .send({ message: 'We was not able to unfriend you' })
+    }
+
+    return res.json(doc)
+  } catch (error) {
+    res.status(error.status || 400).send({
+      message: error.message || 'Some error occurred while updating user.',
+      name: error.name,
+    })
+  }
+}
 // Delete a User with the specified id in the request
 exports.delete = (req, res) => {}
 
 // Delete all User  from the database.
 exports.deleteAll = (req, res) => {}
-
-// Find all published User
-exports.findAllPublished = (req, res) => {}

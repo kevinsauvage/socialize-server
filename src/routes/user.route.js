@@ -22,5 +22,14 @@ router.put('/users/:id/password', users.updatePassword)
 // Delete a User with id
 router.delete('/:id', users.delete)
 
+// Remove from user friends array
+router.put('/users/:userId/unfriends/:friendId', users.unfriend)
+
+router.put('/users/:userId/sendAddfriends/:friendId', users.sendAddfriends)
+
+router.put('/users/:userId/unsendAddfriends/:friendId', users.unsendAddfriends)
+
+router.put('/users/:userId/acceptfriend/:friendId', users.acceptFriend)
+
 // Export API routes
 module.exports = router

@@ -25,6 +25,7 @@ module.exports = (mongoose) => {
       interests: Array,
       friends: Array,
       friendsRequests: Array,
+      website: String,
     },
     { timestamps: true },
   )

@@ -25,13 +25,15 @@ exports.create = async (req, res) => {
         res.send(data)
       })
       .catch((err) => {
-        res.status(500).send({
+        res.status(err.status || 500).send({
           message:
             err.message || 'Some error occurred while creating the post.',
         })
       })
   } catch (error) {
-    console.log(error)
+    res.status(error.status || 500).send({
+      message: err.message || 'Some error occurred while retrieving the posts.',
+    })
   }
 }
 
@@ -40,8 +42,7 @@ exports.findAll = async (req, res) => {
     const posts = await Post.find().sort([['updatedAt', 'descending']])
     res.send(posts)
   } catch (error) {
-    console.log(error)
-    res.status(500).send({
+    res.status(error.status || 500).send({
       message: err.message || 'Some error occurred while retrieving the posts.',
     })
   }
@@ -50,7 +51,6 @@ exports.findAll = async (req, res) => {
 exports.findByUserId = async (req, res) => {
   try {
     const { userId } = req.params
-    console.log(userId)
     if (!userId) res.status(400).send({ message: 'userId params is required!' })
 
     const posts = await Post.find({ authorId: userId }).sort([
@@ -58,7 +58,6 @@ exports.findByUserId = async (req, res) => {
     ])
     res.send(posts)
   } catch (error) {
-    console.log(error)
     res.status(500).send({
       message: err.message || 'Some error occurred while retrieving the posts.',
     })
