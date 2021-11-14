@@ -3,7 +3,7 @@ const crypto = require('crypto')
 const PASSWORD_ITERATIONS = 10000
 
 const User = db.users
-
+const { v4: uuidv4 } = require('uuid')
 // Create and Save a new user
 exports.create = async (req, res) => {
   const { firstName, lastName, email, password } = req.body
