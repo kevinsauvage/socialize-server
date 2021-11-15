@@ -85,16 +85,29 @@ module.exports.isPasswordCorrect = (savedHash, savedSalt, passwordAttempt) =>
 
 // Retrieve all Users from the database.
 exports.findAll = (req, res) => {
-  return User.find()
-    .then((data) => {
-      res.send(data)
-    })
-    .catch((error) => {
-      res.status(error.status).send({
-        message: error.message || 'Some error occurred while updating user.',
-        name: error.name,
+  if (req.body.userFriends) {
+    return User.find({ _id: req.body.userFriends })
+      .then((data) => {
+        res.send(data)
       })
-    })
+      .catch((error) => {
+        res.status(error.status).send({
+          message: error.message || 'Some error occurred while updating user.',
+          name: error.name,
+        })
+      })
+  } else {
+    return User.find()
+      .then((data) => {
+        res.send(data)
+      })
+      .catch((error) => {
+        res.status(error.status).send({
+          message: error.message || 'Some error occurred while updating user.',
+          name: error.name,
+        })
+      })
+  }
 }
 
 // Find a single User with an id

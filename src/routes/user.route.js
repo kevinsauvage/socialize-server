@@ -7,8 +7,8 @@ router.post('/users', users.create)
 // login a User
 router.post('/login', users.login)
 
-// Retrieve all users
-router.get('/users', users.findAll)
+// Retrieve all users from array
+router.post('/users/find', users.findAll)
 
 // Retrieve a single User with id
 router.get('/users/:id', users.findOne)
