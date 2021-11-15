@@ -1,6 +1,7 @@
 const db = require('../models/index')
 
 const Post = db.posts
+const User = db.users
 
 exports.create = async (req, res) => {
   try {
@@ -32,18 +33,30 @@ exports.create = async (req, res) => {
       })
   } catch (error) {
     res.status(error.status || 500).send({
-      message: err.message || 'Some error occurred while retrieving the posts.',
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
     })
   }
 }
 
 exports.findAll = async (req, res) => {
   try {
-    const posts = await Post.find().sort([['updatedAt', 'descending']])
+    const { userId } = req.params
+
+    const user = await User.findOne({ _id: userId })
+
+    if (!user)
+      res.status(400).send({ message: 'No user found for id provided.' })
+
+    const posts = await Post.find({
+      authorId: [...user.friends, user._id],
+    }).sort([['updatedAt', 'descending']])
+
     res.send(posts)
   } catch (error) {
     res.status(error.status || 500).send({
-      message: err.message || 'Some error occurred while retrieving the posts.',
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
     })
   }
 }
@@ -51,15 +64,26 @@ exports.findAll = async (req, res) => {
 exports.findByUserId = async (req, res) => {
   try {
     const { userId } = req.params
-    if (!userId) res.status(400).send({ message: 'userId params is required!' })
-
     const posts = await Post.find({ authorId: userId }).sort([
       ['updatedAt', 'descending'],
     ])
     res.send(posts)
   } catch (error) {
-    res.status(500).send({
-      message: err.message || 'Some error occurred while retrieving the posts.',
+    res.status(error.status || 500).send({
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
+    })
+  }
+}
+
+exports.delete = async (req, res) => {
+  try {
+    const response = await Post.deleteOne({ _id: req.params.id })
+    return res.json(response)
+  } catch (error) {
+    res.status(error.status || 500).send({
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
     })
   }
 }
