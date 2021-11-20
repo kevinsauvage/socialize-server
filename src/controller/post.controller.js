@@ -5,7 +5,7 @@ const User = db.users
 
 exports.create = async (req, res) => {
   try {
-    const { body, authorName, authorId, image, authorAvatar } = req.body
+    const { body, authorName, authorId, image } = req.body
 
     if (!body) res.status(400).send({ message: 'Body or image is required!' })
     if (!authorName)
@@ -17,7 +17,6 @@ exports.create = async (req, res) => {
       authorName: authorName,
       authorId: authorId,
       image: image,
-      authorAvatar: authorAvatar,
     })
 
     post
@@ -80,6 +79,24 @@ exports.delete = async (req, res) => {
   try {
     const response = await Post.deleteOne({ _id: req.params.id })
     return res.json(response)
+  } catch (error) {
+    res.status(error.status || 500).send({
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
+    })
+  }
+}
+exports.update = async (req, res) => {
+  try {
+    const id = req.params.id
+
+    const objectUpdate = req.body
+    if (!id) res.status(400).send({ message: 'Missing userId params' })
+    if (!objectUpdate) res.status(400).send({ message: 'No fields to update' })
+
+    const doc = await Post.updateOne({ _id: id }, objectUpdate)
+
+    res.send(doc)
   } catch (error) {
     res.status(error.status || 500).send({
       message:

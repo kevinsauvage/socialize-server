@@ -18,7 +18,8 @@ module.exports = (mongoose) => {
       city: String,
       country: String,
       birthday: String,
-      image: String,
+      avatar: String,
+      images: Array,
       backgroundImg: String,
       bgProfilPosition: Number,
       phone: String,
@@ -28,6 +29,7 @@ module.exports = (mongoose) => {
       website: String,
       works: Array,
       educations: Array,
+      likedPost: Array,
     },
     { timestamps: true },
   )

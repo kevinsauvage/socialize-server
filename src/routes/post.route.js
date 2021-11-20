@@ -9,4 +9,6 @@ router.get('/posts/user/:userId', posts.findByUserId)
 
 router.delete('/posts/:id', posts.delete)
 
+router.put('/posts/:id', posts.update)
+
 module.exports = router

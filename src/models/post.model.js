@@ -13,11 +13,7 @@ module.exports = (mongoose) => {
         type: String,
         required: true,
       },
-      authorAvatar: {
-        type: String,
-      },
-
-      likes: { type: Number, default: 0 },
+      likes: { type: String, default: 0 },
       date: { type: Date, default: Date.now },
       image: { type: String },
     },
