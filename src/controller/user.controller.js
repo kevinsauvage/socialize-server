@@ -134,8 +134,11 @@ exports.update = async (req, res) => {
     if (!objectUpdate) res.status(400).send({ message: 'No fields to update' })
 
     const doc = await User.updateOne({ _id: id }, objectUpdate)
-
     res.send(doc)
+
+    const newUser = await User.findOne({ _id: id })
+    req.app.get('socketService').emiter('user-changed', newUser)
+    return
   } catch (error) {
     res.send({
       message: error.message || 'Some error occurred while updating user.',
@@ -250,6 +253,10 @@ exports.unfriend = async (req, res) => {
     )
 
     res.json({ doc_1: doc, doc_2: doc2 })
+
+    const newUser = await User.findOne({ _id: id })
+    req.app.io.emit('user-changed', newUser)
+    return
   } catch (error) {
     res.status(error.status || 400).send({
       message: error.message || 'Some error occurred while updating user.',
@@ -280,6 +287,10 @@ exports.sendAddfriends = async (req, res) => {
     const doc = await User.updateOne({ _id: friend._id }, objetToUpdate)
 
     res.json(doc)
+
+    const newUser = await User.findOne({ _id: id })
+    req.app.io.emit('user-changed', newUser)
+    return
   } catch (error) {
     res.status(error.status || 400).send({
       message: error.message || 'Some error occurred while updating user.',
@@ -314,6 +325,10 @@ exports.unsendAddfriends = async (req, res) => {
 
     const doc = await User.updateOne({ _id: friend._id }, objetToUpdate)
     res.json(doc)
+
+    const newUser = await User.findOne({ _id: id })
+    req.app.io.emit('user-changed', newUser)
+    return
   } catch (error) {
     res.status(error.status || 400).send({
       message: error.message || 'Some error occurred while updating user.',
@@ -372,7 +387,10 @@ exports.acceptFriend = async (req, res) => {
         .send({ message: 'We was not able to unfriend you' })
     }
 
-    return res.json(doc)
+    res.json(doc)
+    const newUser = await User.findOne({ _id: id })
+    req.app.io.emit('user-changed', newUser)
+    return
   } catch (error) {
     res.status(error.status || 400).send({
       message: error.message || 'Some error occurred while updating user.',

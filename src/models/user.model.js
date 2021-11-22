@@ -20,6 +20,7 @@ module.exports = (mongoose) => {
       birthday: String,
       avatar: String,
       images: Array,
+      videos: Array,
       backgroundImg: String,
       bgProfilPosition: Number,
       phone: String,

@@ -8,12 +8,13 @@ const postRoute = require('./routes/post.route')
 const searchRoute = require('./routes/search.route')
 const commentRoute = require('./routes/comment.route')
 const config = require('./config/cors')
-
-// defining the Express app
-const app = express()
+const SocketService = require('./socket')
 
 // MongoDb
 const db = require('./models/index')
+
+// defining the Express app
+const app = express()
 
 // adding Helmet to enhance your API's security
 app.use(helmet())
@@ -71,6 +72,8 @@ app.use(async (req, res, next) => {
 })
 
 // starting the server
-app.listen(process.env.PORT || 5000, () => {
+const server = app.listen(process.env.PORT || 5000, () => {
   console.log('listening on port 5000')
 })
+
+app.set('socketService', new SocketService(server))
