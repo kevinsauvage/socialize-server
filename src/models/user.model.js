@@ -13,6 +13,7 @@ module.exports = (mongoose) => {
         type: String,
         require: true,
       },
+      token: { type: String },
       salt: String,
       about: String,
       city: String,

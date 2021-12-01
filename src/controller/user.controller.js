@@ -1,9 +1,8 @@
 const db = require('../models/index')
 const crypto = require('crypto')
 const PASSWORD_ITERATIONS = 10000
-
 const User = db.users
-const { v4: uuidv4 } = require('uuid')
+const jwt = require('jsonwebtoken')
 // Create and Save a new user
 exports.create = async (req, res) => {
   const { firstName, lastName, email, password } = req.body
@@ -12,13 +11,20 @@ exports.create = async (req, res) => {
     res.status(400).send({ message: 'Content can not be empty!' })
     return
   }
+
+  const oldUser = await User.findOne({ email })
+
+  if (oldUser) {
+    return res.status(409).send('User Already Exist. Please Login')
+  }
+
   const { salt, hash } = this.hashPassword(req.body.password)
 
   const user = new User({
     username: req.body.username,
     firstName: req.body.firstName,
     lastName: req.body.lastName,
-    email: req.body.email,
+    email: req.body.email.toLowerCase(),
     password: hash,
     salt: salt,
   })
@@ -39,7 +45,8 @@ exports.create = async (req, res) => {
 // Login user
 exports.login = async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.body.email })
+    const { email, password } = req.body
+    const user = await User.findOne({ email: email.toLowerCase() })
 
     if (!user) {
       const error = new Error('User does not exists')
@@ -48,7 +55,7 @@ exports.login = async (req, res) => {
       throw error
     }
 
-    if (!this.isPasswordCorrect(user.password, user.salt, req.body.password)) {
+    if (!this.isPasswordCorrect(user.password, user.salt, password)) {
       const error = new Error('User password is not correct')
       error.status = 400
       error.name = 'InvalidPassword'
@@ -56,7 +63,19 @@ exports.login = async (req, res) => {
       throw error
     }
 
-    res.json(user)
+    // Create token
+    const token = jwt.sign(
+      { user_id: user._id, email },
+      process.env.TOKEN_KEY,
+      {
+        expiresIn: '2h',
+      },
+    )
+    // save user token
+    user.token = token
+
+    // return new user
+    res.status(201).json(user)
   } catch (error) {
     res.status(error.status || 400).send({
       message: error.message || 'Some error occurred while updating user.',
@@ -254,8 +273,10 @@ exports.unfriend = async (req, res) => {
 
     res.json({ doc_1: doc, doc_2: doc2 })
 
-    const newUser = await User.findOne({ _id: id })
-    req.app.io.emit('user-changed', newUser)
+    const newUser = await User.findOne({ _id: req.params.userId })
+
+    req.app.get('socketService').emiter('user-changed', newUser)
+
     return
   } catch (error) {
     res.status(error.status || 400).send({
@@ -288,8 +309,8 @@ exports.sendAddfriends = async (req, res) => {
 
     res.json(doc)
 
-    const newUser = await User.findOne({ _id: id })
-    req.app.io.emit('user-changed', newUser)
+    const newUser = await User.findOne({ _id: req.params.userId })
+    req.app.get('socketService').emiter('user-changed', newUser)
     return
   } catch (error) {
     res.status(error.status || 400).send({
@@ -326,8 +347,8 @@ exports.unsendAddfriends = async (req, res) => {
     const doc = await User.updateOne({ _id: friend._id }, objetToUpdate)
     res.json(doc)
 
-    const newUser = await User.findOne({ _id: id })
-    req.app.io.emit('user-changed', newUser)
+    const newUser = await User.findOne({ _id: req.params.userId })
+    req.app.get('socketService').emiter('user-changed', newUser)
     return
   } catch (error) {
     res.status(error.status || 400).send({
@@ -388,8 +409,8 @@ exports.acceptFriend = async (req, res) => {
     }
 
     res.json(doc)
-    const newUser = await User.findOne({ _id: id })
-    req.app.io.emit('user-changed', newUser)
+    const newUser = await User.findOne({ _id: req.params.userId })
+    req.app.get('socketService').emiter('user-changed', newUser)
     return
   } catch (error) {
     res.status(error.status || 400).send({

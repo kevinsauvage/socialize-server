@@ -26,8 +26,6 @@ exports.create = async (req, res) => {
       authorId: [...user.friends, user._id],
     }).sort([['updatedAt', 'descending']])
 
-    console.log(io)
-
     res.send(response)
     req.app.get('socketService').emiter('post-changed', posts)
     return
@@ -41,6 +39,9 @@ exports.create = async (req, res) => {
 exports.findAll = async (req, res) => {
   try {
     const { userId } = req.params
+    let { limit } = req.query
+
+    if (limit < parseInt(10)) limit = 10
 
     const user = await User.findOne({ _id: userId })
 
@@ -49,7 +50,10 @@ exports.findAll = async (req, res) => {
 
     const posts = await Post.find({
       authorId: [...user.friends, user._id],
-    }).sort([['updatedAt', 'descending']])
+    })
+      .sort([['updatedAt', 'descending']])
+      .skip(parseInt(limit) - 10)
+      .limit(parseInt(limit))
 
     res.send(posts)
     return

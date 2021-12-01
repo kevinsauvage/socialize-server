@@ -34,7 +34,7 @@ exports.create = (req, res) => {
 
 exports.getComment = async (req, res) => {
   await Comment.find({ postId: req.params.postId })
-    .sort([['updatedAt', 'descending']])
+    .sort([['updatedAt', 'ascending']])
     .then((data) => {
       res.send(data)
     })
@@ -42,7 +42,7 @@ exports.getComment = async (req, res) => {
 
 exports.getSubComment = async (req, res) => {
   await Comment.find({ parentCommentId: req.params.commentId })
-    .sort([['updatedAt', 'descending']])
+    .sort([['updatedAt', 'ascending']])
     .then((data) => {
       res.send(data)
     })
