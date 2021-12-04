@@ -5,3 +5,7 @@ const auth = require('../middleware/auth')
 router.post('/notification', auth, notification.create)
 
 router.get('/notification/:userId', auth, notification.getUserNotification)
+
+router.put('/notification/:id', auth, notification.updateNotification)
+
+module.exports = router

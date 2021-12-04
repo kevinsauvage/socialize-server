@@ -1,19 +1,18 @@
 const db = require('../models/index')
-const io = require('../index')
 const Post = db.posts
 const User = db.users
+const Notification = db.notification
 
 exports.create = async (req, res) => {
   try {
-    const { body, authorId, image, video } = req.body
+    const { body, authorId, image, video, authorName } = req.body
 
     if (!body) res.status(400).send({ message: 'Body or image is required!' })
-
-    if (!authorId) res.status(400).send({ message: 'AuthorId is required!' })
 
     const post = new Post({
       body: body,
       authorId: authorId,
+      authorName: authorName,
       image: image,
       video: video,
     })
@@ -36,15 +35,24 @@ exports.create = async (req, res) => {
   }
 }
 
+exports.findOne = async (req, res) => {
+  try {
+    const { postId } = req.params
+    const post = await Post.findOne({ _id: postId })
+    res.status(200).json(post)
+  } catch (error) {
+    res.status(error.status || 500).send({
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
+    })
+  }
+}
 exports.findAll = async (req, res) => {
   try {
-    const { userId } = req.params
-    let { limit } = req.query
-
-    if (limit < parseInt(10)) limit = 10
+    let { limit, userId } = req.query
 
     const user = await User.findOne({ _id: userId })
-
+    console.log(limit)
     if (!user)
       res.status(400).send({ message: 'No user found for id provided.' })
 
@@ -112,6 +120,93 @@ exports.update = async (req, res) => {
     const doc = await Post.updateOne({ _id: id }, objectUpdate)
 
     res.send(doc)
+  } catch (error) {
+    res.status(error.status || 500).send({
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
+    })
+  }
+}
+
+exports.dislike = async (req, res) => {
+  try {
+    const id = req.params.postId
+    const { userId } = req.body
+
+    if (!userId) return res.status(401).json({ message: 'Missing userId' })
+
+    const post = await Post.findOne({ _id: id })
+
+    const response = await Post.updateOne(
+      { _id: id },
+      { likes: parseInt(post.likes) - 1 },
+    )
+
+    if (response.modifiedCount === 0)
+      res
+        .status(400)
+        .send({ error: 'We could not unlike the post, please try again.' })
+
+    const user = await User.findOne({ _id: userId })
+    const newLikedPost = await user.likedPost.filter((item) => item !== id)
+
+    await User.updateOne({ _id: userId }, { likedPost: newLikedPost })
+
+    const newUser = await User.findOne({ _id: userId })
+
+    const newPost = await Post.findOne({ _id: id })
+
+    res.json(newPost)
+    req.app.get('socketService').emiter('user-changed', newUser)
+  } catch (error) {
+    res.status(error.status || 500).send({
+      message:
+        error.message || 'Some error occurred while retrieving the posts.',
+    })
+  }
+}
+
+exports.like = async (req, res) => {
+  try {
+    const id = req.params.postId
+    const { userId } = req.body
+
+    if (!userId) return res.status(401).json({ message: 'Missing userId' })
+
+    const post = await Post.findOne({ _id: id })
+
+    const response = await Post.updateOne(
+      { _id: id },
+      { likes: parseInt(post.likes) + 1 },
+    )
+
+    if (response.modifiedCount === 0)
+      res
+        .status(400)
+        .send({ error: 'We could not like the post, please try again.' })
+
+    const user = await User.findOne({ _id: userId })
+
+    const newLikedPost = [...user.likedPost, id]
+
+    await User.updateOne({ _id: userId }, { likedPost: newLikedPost })
+
+    const notification = new Notification({
+      type: 'Like',
+      userId: user._id,
+      authorId: post.authorId,
+      authorName: user.username,
+      postId: post._id,
+    })
+
+    await notification.save()
+
+    const newPost = await Post.findOne({ _id: id })
+
+    const newUser = await User.findOne({ _id: userId })
+
+    res.json(newPost)
+    req.app.get('socketService').emiter('user-changed', newUser)
   } catch (error) {
     res.status(error.status || 500).send({
       message:

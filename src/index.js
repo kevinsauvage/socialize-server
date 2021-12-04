@@ -1,3 +1,4 @@
+const db = require('./models/index')
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
@@ -5,13 +6,14 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const userRoute = require('./routes/user.route')
 const postRoute = require('./routes/post.route')
+const notificationRoute = require('./routes/notification.route')
 const searchRoute = require('./routes/search.route')
+const uploadRoute = require('./routes/upload.route')
 const commentRoute = require('./routes/comment.route')
 const config = require('./config/cors')
 const SocketService = require('./socket')
-
+require('dotenv').config()
 // MongoDb
-const db = require('./models/index')
 
 // defining the Express app
 const app = express()
@@ -63,7 +65,9 @@ app.use(morgan('combined'))
 app.use(postRoute)
 app.use(userRoute)
 app.use(commentRoute)
+app.use(notificationRoute)
 app.use(searchRoute)
+app.use(uploadRoute)
 app.use('/', (req, res) => res.send('Working!!!'))
 
 // defining default route

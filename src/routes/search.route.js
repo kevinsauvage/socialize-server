@@ -7,3 +7,4 @@ router.get('/search', auth, users.search)
 router.post('/searchByIds', auth, users.searchByIds)
 
 module.exports = router
+console.log('')

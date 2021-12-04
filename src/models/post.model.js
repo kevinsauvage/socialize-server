@@ -9,6 +9,10 @@ module.exports = (mongoose) => {
         type: String,
         required: true,
       },
+      authorName: {
+        type: String,
+        required: true,
+      },
       likes: { type: String, default: 0 },
       date: { type: Date, default: Date.now },
       image: { type: String },

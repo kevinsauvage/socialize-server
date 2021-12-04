@@ -1,23 +1,45 @@
 const db = require('../models/index')
+const Notification = db.notification
 
 const Comment = db.comment
 
-exports.create = (req, res) => {
-  const { postId, parentCommentId, authorName, authorId, body } = req.body
+exports.create = async (req, res) => {
+  const {
+    postId,
+    parentCommentId,
+    authorName,
+    authorId,
+    body,
+    postAuthorId,
+  } = req.body
+
+  console.log(req.body)
 
   if (!body) res.status(400).send({ message: 'Body is required!' })
   if (!authorName) res.status(400).send({ message: 'AuthorName is required!' })
   if (!authorId) res.status(400).send({ message: 'AuthorId is required!' })
+  if (!postAuthorId)
+    res.status(400).send({ message: 'postAuthorId is required!' })
   if (!postId && !parentCommentId)
     res.status(400).send({ message: 'postId or parentCommentId is required!' })
 
   const comment = new Comment({
-    postId: req.body.postId,
-    parentCommentId: req.body.parentCommentId,
-    authorName: req.body.authorName,
-    authorId: req.body.authorId,
-    body: req.body.body,
+    postId: postId,
+    parentCommentId: parentCommentId,
+    authorName: authorName,
+    authorId: authorId,
+    body: body,
   })
+
+  const notification = new Notification({
+    type: 'Comment',
+    userId: authorId,
+    authorId: postAuthorId,
+    authorName: authorName,
+    postId: postId,
+  })
+
+  await notification.save()
 
   comment
     .save(comment)
