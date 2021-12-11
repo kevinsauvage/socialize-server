@@ -259,8 +259,12 @@ exports.unfriend = async (req, res) => {
         .send({ message: 'User or friend not find with id provided' })
     }
 
-    const newUserFriends = user.friends.filter((id) => !friend._id)
-    const newFriendFriends = friend.friends.filter((id) => !user._id)
+    const newUserFriends = user.friends.filter(
+      (id) => id.toString() !== friend._id.toString(),
+    )
+    const newFriendFriends = friend.friends.filter(
+      (id) => id.toString() !== user._id.toString(),
+    )
 
     const doc = await User.updateOne(
       { _id: user._id },

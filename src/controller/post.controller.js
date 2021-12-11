@@ -19,14 +19,7 @@ exports.create = async (req, res) => {
 
     const response = await post.save()
 
-    const user = await User.findOne({ _id: authorId })
-
-    const posts = await Post.find({
-      authorId: [...user.friends, user._id],
-    }).sort([['updatedAt', 'descending']])
-
     res.send(response)
-    req.app.get('socketService').emiter('post-changed', posts)
     return
   } catch (error) {
     res.status(error.status || 500).send({
@@ -39,7 +32,7 @@ exports.findOne = async (req, res) => {
   try {
     const { postId } = req.params
     const post = await Post.findOne({ _id: postId })
-    res.status(200).json(post)
+    res.send(post)
   } catch (error) {
     res.status(error.status || 500).send({
       message:
@@ -47,6 +40,7 @@ exports.findOne = async (req, res) => {
     })
   }
 }
+
 exports.findAll = async (req, res) => {
   try {
     let { limit, userId } = req.query
@@ -59,8 +53,7 @@ exports.findAll = async (req, res) => {
     const posts = await Post.find({
       authorId: [...user.friends, user._id],
     })
-      .sort([['updatedAt', 'descending']])
-      .skip(parseInt(limit) - 10)
+      .sort([['createdAt', 'descending']])
       .limit(parseInt(limit))
 
     res.send(posts)
@@ -76,9 +69,12 @@ exports.findAll = async (req, res) => {
 exports.findByUserId = async (req, res) => {
   try {
     const { userId } = req.params
-    const posts = await Post.find({ authorId: userId }).sort([
-      ['updatedAt', 'descending'],
-    ])
+    const { limit } = req.query
+
+    const posts = await Post.find({ authorId: userId })
+      .sort([['updatedAt', 'descending']])
+      .limit(parseInt(limit))
+
     res.send(posts)
     return
   } catch (error) {
@@ -93,33 +89,8 @@ exports.delete = async (req, res) => {
   try {
     const response = await Post.findByIdAndRemove({ _id: req.params.id })
 
-    const user = await User.findOne({ _id: response.authorId })
-
-    const posts = await Post.find({
-      authorId: [...user.friends, user._id],
-    }).sort([['updatedAt', 'descending']])
     res.json(response)
-    req.app.get('socketService').emiter('post-changed', posts)
     return
-  } catch (error) {
-    res.status(error.status || 500).send({
-      message:
-        error.message || 'Some error occurred while retrieving the posts.',
-    })
-  }
-}
-exports.update = async (req, res) => {
-  try {
-    const id = req.params.id
-
-    const objectUpdate = req.body
-
-    if (!id) res.status(400).send({ message: 'Missing postId params' })
-    if (!objectUpdate) res.status(400).send({ message: 'No fields to update' })
-
-    const doc = await Post.updateOne({ _id: id }, objectUpdate)
-
-    res.send(doc)
   } catch (error) {
     res.status(error.status || 500).send({
       message:

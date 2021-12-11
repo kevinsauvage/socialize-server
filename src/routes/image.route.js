@@ -31,12 +31,14 @@ router.post('/upload/image', async (req, res) => {
       const { path } = req.file // file becomes available in req at this point
 
       const fName = req.file.originalname.split('.')[0]
+      
 
       cloudinary.uploader.upload(
         path,
         {
           resource_type: 'image',
           public_id: fName,
+          invalidate: true,
         },
 
         // Send cloudinary response or catch error
@@ -105,4 +107,5 @@ router.post('/upload/video', async (req, res) => {
     })
   }
 })
+
 module.exports = router

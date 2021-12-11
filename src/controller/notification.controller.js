@@ -25,7 +25,7 @@ exports.getUserNotification = async (req, res) => {
       authorId: userId,
       userId: { $ne: userId },
     })
-      .sort([['createdAt', 'ascending']])
+      .sort([['createdAt', 'descending']])
       .limit(parseInt(limit))
 
     const count = await Notification.find({
