@@ -3,43 +3,49 @@ const crypto = require('crypto')
 const PASSWORD_ITERATIONS = 10000
 const User = db.users
 const jwt = require('jsonwebtoken')
+
 // Create and Save a new user
-exports.create = async (req, res) => {
-  const { firstName, lastName, email, password } = req.body
+exports.create = async (req, res, next) => {
+  try {
+    const { firstName, lastName, email, password } = req.body
 
-  if (!firstName || !lastName || !email || !password) {
-    res.status(400).send({ message: 'Content can not be empty!' })
-    return
-  }
+    if (!firstName || !lastName || !email || !password) {
+      const error = new Error('Content can not be empty!')
+      error.status = 400
+      error.name = 'missingField'
+      throw error
+    }
 
-  const oldUser = await User.findOne({ email })
+    const oldUser = await User.findOne({ email })
 
-  if (oldUser) {
-    return res.status(409).send('User Already Exist. Please Login')
-  }
+    if (oldUser) {
+      const error = new Error()
+      error.message = 'User email already exist.'
+      error.status = 409
+      error.name = 'conflit'
+      throw error
+    }
 
-  const { salt, hash } = this.hashPassword(req.body.password)
+    const { salt, hash } = this.hashPassword(req.body.password)
 
-  const user = new User({
-    username: req.body.username,
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    email: req.body.email.toLowerCase(),
-    password: hash,
-    salt: salt,
-  })
-
-  return user
-    .save(user)
-    .then((data) => {
-      res.send(data)
+    const user = new User({
+      username: req.body.username,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email.toLowerCase(),
+      password: hash,
+      salt: salt,
     })
-    .catch((error) => {
-      res.status(error.status || 400).send({
-        message: error.message || 'Some error occurred while updating user.',
-        name: error.name,
+
+    return user
+      .save(user)
+      .then((data) => {
+        res.send(data)
       })
-    })
+      .catch((error) => next(error))
+  } catch (error) {
+    res.status(error.status).send(error)
+  }
 }
 
 // Login user
@@ -49,14 +55,14 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase() })
 
     if (!user) {
-      const error = new Error('User does not exists')
+      const error = new Error('User email not found.')
       error.status = 404
       error.name = 'UserNotFound'
       throw error
     }
 
     if (!this.isPasswordCorrect(user.password, user.salt, password)) {
-      const error = new Error('User password is not correct')
+      const error = new Error('The password is not correct.')
       error.status = 400
       error.name = 'InvalidPassword'
       error.ok = false
@@ -68,7 +74,7 @@ exports.login = async (req, res) => {
       { user_id: user._id, email },
       process.env.TOKEN_KEY,
       {
-        expiresIn: '2h',
+        expiresIn: '24h',
       },
     )
     // save user token
@@ -78,7 +84,7 @@ exports.login = async (req, res) => {
     res.status(201).json(user)
   } catch (error) {
     res.status(error.status || 400).send({
-      message: error.message || 'Some error occurred while updating user.',
+      message: error.message || 'Some error occurred while login the user.',
       name: error.name,
     })
   }
@@ -96,11 +102,21 @@ module.exports.hashPassword = (password) => {
 }
 
 // CHECK PASSWORD
-module.exports.isPasswordCorrect = (savedHash, savedSalt, passwordAttempt) =>
-  savedHash ===
-  crypto
-    .pbkdf2Sync(passwordAttempt, savedSalt, PASSWORD_ITERATIONS, 512, 'sha512')
-    .toString('base64')
+module.exports.isPasswordCorrect = (savedHash, savedSalt, passwordAttempt) => {
+  const isCorrect =
+    savedHash ===
+    crypto
+      .pbkdf2Sync(
+        passwordAttempt,
+        savedSalt,
+        PASSWORD_ITERATIONS,
+        512,
+        'sha512',
+      )
+      .toString('base64')
+
+  return isCorrect
+}
 
 // Retrieve all Users from the database.
 exports.findAll = (req, res) => {
@@ -111,7 +127,7 @@ exports.findAll = (req, res) => {
       })
       .catch((error) => {
         res.status(error.status).send({
-          message: error.message || 'Some error occurred while updating user.',
+          message: error.message || 'Some error occurred while finding users.',
           name: error.name,
         })
       })
@@ -122,7 +138,7 @@ exports.findAll = (req, res) => {
       })
       .catch((error) => {
         res.status(error.status).send({
-          message: error.message || 'Some error occurred while updating user.',
+          message: error.message || 'Some error occurred while finding users.',
           name: error.name,
         })
       })
@@ -136,7 +152,7 @@ exports.findOne = async (req, res) => {
     res.json(user)
   } catch (error) {
     res.status(error.status).send({
-      message: error.message || 'Some error occurred while updating user.',
+      message: error.message || 'Some error occurred while finding user.',
       name: error.name,
     })
   }
@@ -186,8 +202,9 @@ exports.updatePassword = async (req, res) => {
     }
 
     if (!this.isPasswordCorrect(user.password, user.salt, oldPassword)) {
-      const error = new Error('User current password is not correct')
+      const error = new Error()
       error.status = 400
+      error.message = 'User current password is not correct'
       error.name = 'InvalidPassword'
       error.ok = false
       throw error
@@ -204,10 +221,7 @@ exports.updatePassword = async (req, res) => {
 
     res.send(oldDocument)
   } catch (error) {
-    res.status(error.status).send({
-      message: error.message || 'Some error occurred while updating user.',
-      name: error.name,
-    })
+    res.status(error.status).send(error)
   }
 }
 

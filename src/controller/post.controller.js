@@ -72,7 +72,7 @@ exports.findByUserId = async (req, res) => {
     const { limit } = req.query
 
     const posts = await Post.find({ authorId: userId })
-      .sort([['updatedAt', 'descending']])
+      .sort([['createdAt', 'descending']])
       .limit(parseInt(limit))
 
     res.send(posts)
